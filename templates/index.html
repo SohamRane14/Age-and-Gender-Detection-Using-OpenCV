@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Age and Gender Detection</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.2/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.5)), url('https://images.unsplash.com/photo-1496741924180-e9e1e4d0f6b2?fit=crop&w=1600&h=900') no-repeat center center fixed;
+            background-size: cover;
+            color: #f3f4f6;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2rem;
+            border-radius: 0.5rem;
+            max-width: 700px;
+            margin: 2rem auto;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .custom-card {
+            max-width: 600px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        .custom-card:hover {
+            transform: translateY(-5px);
+        }
+        .custom-button {
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        .custom-button:hover {
+            background-color: #2563eb;
+            transform: translateY(-2px);
+        }
+        .hidden {
+            display: none;
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .interactive-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .interactive-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="bg-white p-8 rounded-lg shadow-md interactive-card">
+            <h2 class="text-3xl font-bold mb-6 text-center text-blue-600">Age and Gender Detection</h2>
+            <form id="upload-form" enctype="multipart/form-data" class="mb-6">
+                <div class="mb-4">
+                    <label class="block text-lg font-medium text-gray-700 mb-2">Upload Image</label>
+                    <input type="file" id="file-input" name="file" class="block w-full text-gray-700 p-2 border border-gray-300 rounded-md">
+                </div>
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md custom-button w-full">Upload</button>
+            </form>
+            <div class="text-center">
+                <label class="block text-lg font-medium text-gray-700 mb-2">Or use the camera</label>
+                <button id="camera-button" class="bg-green-500 text-white px-4 py-2 rounded-md custom-button mb-4">Use Camera</button>
+                <video id="video" width="320" height="240" autoplay class="hidden mx-auto rounded-md border-2 border-gray-300"></video>
+                <button id="capture-button" class="bg-red-500 text-white px-4 py-2 rounded-md custom-button hidden">Capture</button>
+            </div>
+            <div id="result" class="mt-6 hidden">
+                <h3 class="text-2xl font-semibold text-center text-gray-800 mb-4">Results</h3>
+                <img id="result-image" class="w-full rounded-md shadow-md mb-4">
+                <ul id="result-list" class="list-disc pl-5 text-lg text-gray-700 mb-4"></ul>
+                <button id="clear-button" class="bg-yellow-500 text-white px-4 py-2 rounded-md custom-button hidden">Clear</button>
+            </div>
+            <div id="loading" class="hidden">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('upload-form').onsubmit = async function (e) {
+            e.preventDefault();
+            document.getElementById('loading').classList.remove('hidden');
+            const formData = new FormData(this);
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            document.getElementById('loading').classList.add('hidden');
+            if (result.image_url) {
+                const resultImage = document.getElementById('result-image');
+                resultImage.src = result.image_url;
+                document.getElementById('result-list').innerHTML = result.results.map(res => 
+                    `<li>Gender: ${res.gender} (${res.gender_confidence.toFixed(2)}), Age: ${res.age} (${res.age_confidence.toFixed(2)})</li>`
+                ).join('');
+                document.getElementById('result').classList.remove('hidden');
+                document.getElementById('clear-button').classList.remove('hidden');
+            } else {
+                alert(result.error);
+            }
+        };
+
+        document.getElementById('camera-button').onclick = function () {
+            const video = document.getElementById('video');
+            const captureButton = document.getElementById('capture-button');
+            video.classList.remove('hidden');
+            captureButton.classList.remove('hidden');
+
+            navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+                video.srcObject = stream;
+                window.localStream = stream;
+            }).catch(err => {
+                console.error('Error accessing camera: ', err);
+                alert('Error accessing camera');
+            });
+        };
+
+        document.getElementById('capture-button').onclick = async function () {
+            const video = document.getElementById('video');
+            const captureButton = document.getElementById('capture-button');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const frameData = canvas.toDataURL('image/jpeg').split(',')[1];
+            
+            const response = await fetch('/camera', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ frame: frameData })
+            });
+            const result = await response.json();
+            if (result.results) {
+                document.getElementById('result-image').src = canvas.toDataURL('image/jpeg');
+                document.getElementById('result-list').innerHTML = result.results.map(res => 
+                    `<li>Gender: ${res.gender} (${res.gender_confidence.toFixed(2)}), Age: ${res.age} (${res.age_confidence.toFixed(2)})</li>`
+                ).join('');
+                document.getElementById('result').classList.remove('hidden');
+                document.getElementById('clear-button').classList.remove('hidden');
+            } else {
+                alert(result.error);
+            }
+
+            // Hide the capture button immediately after capture
+            captureButton.classList.add('hidden');
+
+            // Stop the video stream after capture
+            if (window.localStream) {
+                window.localStream.getTracks().forEach(track => track.stop());
+                video.classList.add('hidden');
+            }
+        };
+
+        document.getElementById('clear-button').onclick = function () {
+            document.getElementById('result').classList.add('hidden');
+            document.getElementById('clear-button').classList.add('hidden');
+            document.getElementById('result-image').src = '';
+            document.getElementById('result-list').innerHTML = '';
+            
+            const captureButton = document.getElementById('capture-button');
+            captureButton.classList.add('hidden');
+            
+            const video = document.getElementById('video');
+            if (window.localStream) {
+                window.localStream.getTracks().forEach(track => track.stop());
+                video.classList.add('hidden');
+            }
+        };
+    </script>
+</body>
+</html>
