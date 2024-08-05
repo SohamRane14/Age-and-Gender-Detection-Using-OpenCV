@@ -1,3 +1,5 @@
 "# Age-and-Gender-Detection-Using-OpenCV" 
 
-https://github.com/SohamRane14/Age-and-Gender-Detection-Using-OpenCV/blob/main/Video.mp4
+
+https://github.com/user-attachments/assets/217fa2ec-7bed-4d1d-ada0-b5223200cbcb
+
