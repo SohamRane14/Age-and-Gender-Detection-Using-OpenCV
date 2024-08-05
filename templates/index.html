@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Age and Gender Detection</title>
+    <!-- Tailwind CSS for styling -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.2/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        /* Custom styles for background, cards, buttons, and spinner */
         body {
             font-family: 'Roboto', sans-serif;
             background: linear-gradient(135deg, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.5)), url('https://images.unsplash.com/photo-1496741924180-e9e1e4d0f6b2?fit=crop&w=1600&h=900') no-repeat center center fixed;
@@ -27,157 +30,156 @@
             transition: transform 0.3s ease;
         }
         .custom-card:hover {
-            transform: translateY(-5px);
+            transform: scale(1.02);
         }
         .custom-button {
             transition: background-color 0.3s ease, transform 0.3s ease;
         }
         .custom-button:hover {
-            background-color: #2563eb;
+            background-color: #007bff;
             transform: translateY(-2px);
         }
-        .hidden {
-            display: none;
-        }
         .loading-spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
+            border: 4px solid rgba(0, 0, 0, 0.1);
             border-radius: 50%;
-            width: 24px;
-            height: 24px;
+            border-top: 4px solid #007bff;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
-            margin: auto;
+            margin: 0 auto;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .interactive-card {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .interactive-card:hover {
-            transform: scale(1.02);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="bg-white p-8 rounded-lg shadow-md interactive-card">
-            <h2 class="text-3xl font-bold mb-6 text-center text-blue-600">Age and Gender Detection</h2>
+        <div class="custom-card p-6 bg-white rounded-lg">
+            <h1 class="text-3xl font-semibold mb-6 text-center text-gray-800">Age and Gender Detection</h1>
+            <!-- Form for uploading image -->
             <form id="upload-form" enctype="multipart/form-data" class="mb-6">
                 <div class="mb-4">
-                    <label class="block text-lg font-medium text-gray-700 mb-2">Upload Image</label>
+                    <label for="file-input" class="block text-lg font-medium text-gray-700 mb-2">Upload Image</label>
                     <input type="file" id="file-input" name="file" class="block w-full text-gray-700 p-2 border border-gray-300 rounded-md">
                 </div>
                 <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md custom-button w-full">Upload</button>
             </form>
+            <!-- Button to use camera and video element for live capture -->
             <div class="text-center">
-                <label class="block text-lg font-medium text-gray-700 mb-2">Or use the camera</label>
+                <label for="camera-button" class="block text-lg font-medium text-gray-700 mb-2">Or use the camera</label>
                 <button id="camera-button" class="bg-green-500 text-white px-4 py-2 rounded-md custom-button mb-4">Use Camera</button>
                 <video id="video" width="320" height="240" autoplay class="hidden mx-auto rounded-md border-2 border-gray-300"></video>
                 <button id="capture-button" class="bg-red-500 text-white px-4 py-2 rounded-md custom-button hidden">Capture</button>
             </div>
+            <!-- Section to display results -->
             <div id="result" class="mt-6 hidden">
                 <h3 class="text-2xl font-semibold text-center text-gray-800 mb-4">Results</h3>
                 <img id="result-image" class="w-full rounded-md shadow-md mb-4">
                 <ul id="result-list" class="list-disc pl-5 text-lg text-gray-700 mb-4"></ul>
                 <button id="clear-button" class="bg-yellow-500 text-white px-4 py-2 rounded-md custom-button hidden">Clear</button>
             </div>
+            <!-- Loading spinner -->
             <div id="loading" class="hidden">
                 <div class="loading-spinner"></div>
             </div>
         </div>
     </div>
     <script>
+        // Handle form submission for image upload
         document.getElementById('upload-form').onsubmit = async function (e) {
-            e.preventDefault();
-            document.getElementById('loading').classList.remove('hidden');
-            const formData = new FormData(this);
-            const response = await fetch('/upload', {
+            e.preventDefault();  // Prevent default form submission
+            document.getElementById('loading').classList.remove('hidden');  // Show loading spinner
+            const formData = new FormData(this);  // Create FormData object from form
+            const response = await fetch('/upload', {  // Send POST request to server
                 method: 'POST',
                 body: formData
             });
-            const result = await response.json();
-            document.getElementById('loading').classList.add('hidden');
+            const result = await response.json();  // Parse server response
+            document.getElementById('loading').classList.add('hidden');  // Hide loading spinner
             if (result.image_url) {
+                // If image URL is returned, display results
                 const resultImage = document.getElementById('result-image');
-                resultImage.src = result.image_url;
+                resultImage.src = result.image_url;  // Set image source to returned URL
                 document.getElementById('result-list').innerHTML = result.results.map(res => 
                     `<li>Gender: ${res.gender} (${res.gender_confidence.toFixed(2)}), Age: ${res.age} (${res.age_confidence.toFixed(2)})</li>`
-                ).join('');
-                document.getElementById('result').classList.remove('hidden');
-                document.getElementById('clear-button').classList.remove('hidden');
+                ).join('');  // List results with confidence scores
+                document.getElementById('result').classList.remove('hidden');  // Show results section
+                document.getElementById('clear-button').classList.remove('hidden');  // Show clear button
             } else {
-                alert(result.error);
+                alert(result.error);  // Show error message if processing failed
             }
         };
 
+        // Handle camera button click to start video stream
         document.getElementById('camera-button').onclick = function () {
             const video = document.getElementById('video');
             const captureButton = document.getElementById('capture-button');
-            video.classList.remove('hidden');
-            captureButton.classList.remove('hidden');
+            video.classList.remove('hidden');  // Show video element
+            captureButton.classList.remove('hidden');  // Show capture button
 
             navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-                video.srcObject = stream;
-                window.localStream = stream;
+                video.srcObject = stream;  // Set video source to camera stream
+                window.localStream = stream;  // Store stream for later access
             }).catch(err => {
                 console.error('Error accessing camera: ', err);
-                alert('Error accessing camera');
+                alert('Error accessing camera');  // Show error if camera access fails
             });
         };
 
+        // Handle capture button click to capture a frame from the video
         document.getElementById('capture-button').onclick = async function () {
             const video = document.getElementById('video');
             const captureButton = document.getElementById('capture-button');
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+            const canvas = document.createElement('canvas');  // Create canvas to capture video frame
+            canvas.width = video.videoWidth;  // Set canvas width to video width
+            canvas.height = video.videoHeight;  // Set canvas height to video height
             const context = canvas.getContext('2d');
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const frameData = canvas.toDataURL('image/jpeg').split(',')[1];
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);  // Draw video frame onto canvas
+            const frameData = canvas.toDataURL('image/jpeg').split(',')[1];  // Convert canvas to base64 JPEG data
             
-            const response = await fetch('/camera', {
+            const response = await fetch('/camera', {  // Send POST request with frame data
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ frame: frameData })
             });
-            const result = await response.json();
+            const result = await response.json();  // Parse server response
             if (result.results) {
-                document.getElementById('result-image').src = canvas.toDataURL('image/jpeg');
+                // If results are returned, display results
+                document.getElementById('result-image').src = canvas.toDataURL('image/jpeg');  // Show captured image
                 document.getElementById('result-list').innerHTML = result.results.map(res => 
                     `<li>Gender: ${res.gender} (${res.gender_confidence.toFixed(2)}), Age: ${res.age} (${res.age_confidence.toFixed(2)})</li>`
-                ).join('');
-                document.getElementById('result').classList.remove('hidden');
-                document.getElementById('clear-button').classList.remove('hidden');
+                ).join('');  // List results with confidence scores
+                document.getElementById('result').classList.remove('hidden');  // Show results section
+                document.getElementById('clear-button').classList.remove('hidden');  // Show clear button
             } else {
-                alert(result.error);
+                alert(result.error);  // Show error message if processing failed
             }
 
-            // Hide the capture button immediately after capture
-            captureButton.classList.add('hidden');
+            // Hide the capture button and stop video stream after capture
+            captureButton.classList.add('hidden');  // Hide capture button
 
-            // Stop the video stream after capture
             if (window.localStream) {
-                window.localStream.getTracks().forEach(track => track.stop());
-                video.classList.add('hidden');
+                window.localStream.getTracks().forEach(track => track.stop());  // Stop all tracks in the stream
+                video.classList.add('hidden');  // Hide video element
             }
         };
 
+        // Handle clear button click to reset the result section
         document.getElementById('clear-button').onclick = function () {
-            document.getElementById('result').classList.add('hidden');
-            document.getElementById('clear-button').classList.add('hidden');
-            document.getElementById('result-image').src = '';
-            document.getElementById('result-list').innerHTML = '';
+            document.getElementById('result').classList.add('hidden');  // Hide results section
+            document.getElementById('clear-button').classList.add('hidden');  // Hide clear button
+            document.getElementById('result-image').src = '';  // Clear result image
+            document.getElementById('result-list').innerHTML = '';  // Clear result list
             
             const captureButton = document.getElementById('capture-button');
-            captureButton.classList.add('hidden');
+            captureButton.classList.add('hidden');  // Hide capture button
             
             const video = document.getElementById('video');
             if (window.localStream) {
-                window.localStream.getTracks().forEach(track => track.stop());
-                video.classList.add('hidden');
+                window.localStream.getTracks().forEach(track => track.stop());  // Stop all tracks in the stream
+                video.classList.add('hidden');  // Hide video element
             }
         };
     </script>
